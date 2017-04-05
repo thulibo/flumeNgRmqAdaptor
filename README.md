@@ -1,0 +1,2 @@
+# flumeNgRmqAdaptor
+添加一个flumeNgAdaptor，支持RocketMQ的source和sink
