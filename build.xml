@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="rocketmq-flume" default="dist" basedir=".">
+    <!-- set global properties for this build -->
+    <property name="src" location="src"/>
+    <property name="conf" location="conf"/>
+    <property name="lib"  location="lib"/>
+    <property name="build" location="build"/>
+    <property name="bin" location="bin"/>
+    <property name="test" location="test"/>
+    <property name="temp" location="temp"/>
+    <property name="temp_conf" location="temp/conf"/>
+	<property name="temp_lib" location="temp/lib"/>
+    <property name="dist"  location="dist"/>
+	<property name="version"  value="1.0.0"/>
+	
+	<path id="build.classpath">
+	    <fileset dir="${basedir}/">
+	        <include name="${lib}/*.jar"/>
+	    </fileset>
+	</path>
+
+	<pathconvert property="mf.classpath" pathsep=" ">
+	    <path refid="build.classpath"/>
+	    <mapper>
+	        <chainedmapper>
+	            <flattenmapper/>
+	            <globmapper from="*.jar" to="lib/*.jar"/>
+	        </chainedmapper>
+	    </mapper>
+	</pathconvert>
+	
+    <target name="init">
+        <!-- Delete the directories-->
+        <delete dir="${build}" />
+        <delete dir="${test}" />
+        <delete dir="${temp}" />
+        <delete dir="${dist}" />
+        <!-- Create the time stamp -->
+        <tstamp />
+        <!-- Create the directories -->
+        <mkdir dir="${build}" />
+        <mkdir dir="${temp}" />
+    	<mkdir dir="${temp_lib}" />
+        <mkdir dir="${test}/result" />
+        <mkdir dir="${dist}" />
+    </target>
+
+    <target name="compile" depends="init" description="compile the source ">
+        <!-- Compile the java code from ${src} into ${build} -->
+        <javac includeantruntime="false" encoding="GBK" fork="yes" source="1.7" target="1.7" srcdir="${src}" destdir="${build}">
+            <classpath>
+                <fileset dir="${lib}">
+                    <include name="**/*.jar" />
+                </fileset>
+            </classpath>
+        	<compilerarg value="-Xlint:deprecation"/>
+        </javac>
+        <!-- Copy log4j and libraries into ${build} -->
+        <!--copy file="${src}/log4j.properties" todir="${build}" /-->
+    	
+        <!-- Will need to upload dependencies to storm cluster -->
+        <!--copy todir="${build}/lib">
+            <fileset dir="${lib}">
+                <include name="guava-18.0.jar" />
+            </fileset>
+        </copy-->
+    </target>
+
+    <target name="prepare" depends="compile" description="prepare the stuff to dist">
+        <jar destfile="${temp}/${ant.project.name}-${version}.jar" basedir="${build}">
+        	<!--including the jar under lib with target jar-->
+        	<!--zipgroupfileset dir="${lib}" includes="guava-18.0.jar" excludes="" /-->
+        	<manifest>
+    	        <!--attribute name="Main-Class" value="${main.class}"/-->
+    	        <attribute name="Class-Path" value="${mf.classpath}"/>
+    	    </manifest>
+       	</jar>
+    	<jar destfile="${temp}/${ant.project.name}-${version}-sources.jar">
+    	    <fileset dir="${src}" includes="**/*.java"/>
+    	</jar>
+    	<!-- Copy meta files -->
+        <!--copy todir="${temp_conf}">
+            <fileset dir="${conf}">
+                <include name="*" />
+            </fileset>
+        </copy-->
+        <!-- Copy scripts to ${temp} -->
+        <copy todir="${temp}">
+            <fileset dir=".">
+                <include name="*.conf" />
+                <include name="*.sh" />
+            </fileset>
+        </copy>
+    	<copy todir="${temp_lib}">
+    		<fileset dir="${lib}">
+    		    <include name="guava-18.0.jar" />
+    		    <include name="joda-time-2.9.jar" />
+    		</fileset>
+        </copy>
+    </target>
+
+    <target name="dist" depends="prepare" description="generate the distribution">
+        <zip destfile="${dist}/${ant.project.name}-${version}.zip" basedir="${temp}" />
+    </target>
+
+    <target name="clean" description="clean up" >
+    	<delete dir="${bin}"/>
+        <delete dir="${build}"/>
+        <delete dir="${test}"/>
+        <delete dir="${temp}"/>
+    </target>
+	
+	<target name="cleanall" depends="clean" description="clean up all" >
+        <delete dir="${dist}"/>
+    </target>
+</project>
